@@ -55,24 +55,30 @@ async function run() {
           return res.status(400).send(`Webhook Error: ${error.message}`);
         }
 
-        if (event.type !== "checkout.session.completed") {
-          return res.json({ received: true });
+        if (event.type === "checkout.session.completed") {
+          const session = event.data.object;
+          const orderId = session.metadata?.orderId;
+
+          if (orderId) {
+            await orders.updateOne(
+              { _id: new ObjectId(orderId) },
+              { $set: { approvalStatus: "paid" } }
+            );
+          }
         }
 
-        const session = event.data.object;
-        const customerEmail =
-          session.metadata?.email || session.customer_details?.email;
-        const customerName =
-          session.metadata?.client_name || session.customer_details?.name || "Customer";
+        else if (event.type === "checkout.session.expired") {
+          const session = event.data.object;
+          const orderId = session.metadata?.orderId;
 
-        const orderId = session.metadata?.orderId;
-
-        if (orderId) {
-          result = await orders.updateOne(
-            { _id: new ObjectId(orderId) },
-            { $set: { approvalStatus: "paid" } }
-          );
+          if (orderId) {
+            await orders.updateOne(
+              { _id: new ObjectId(orderId) },
+              { $set: { approvalStatus: "expired" } }
+            );
+          }
         }
+
         return res.json({ received: true });
       }
     );
@@ -103,7 +109,7 @@ async function run() {
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           success_url: `http://localhost:5173/success`,
-          cancel_url: 'http://localhost:5173/cancel',
+          cancel_url: `http://localhost:5173/cancel?orderId=${inseterdId.insertedId}`,
           line_items: [
             {
               price_data: {
@@ -173,7 +179,27 @@ async function run() {
       }
     );
 
-  } finally {}
+    app.post("/payment-cancelled", async (req, res) => {
+      try {
+        const { orderId } = req.body;
+
+        await orders.updateOne(
+          { _id: new ObjectId(orderId) },
+          {
+            $set: {
+              approvalStatus: "cancelled",
+            },
+          }
+        );
+
+        res.json({ success: true });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false });
+      }
+    });
+
+  } finally { }
 }
 run().catch(console.dir);
 
