@@ -1,8 +1,19 @@
 // Cancel.jsx
 
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import axios from "axios";
 
 export default function Cancel() {
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const orderId = searchParams.get("orderId");
+    if (orderId) {
+      axios.post("http://localhost:3000/payment-cancelled", { orderId })
+    }
+  }, [searchParams])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-red-50 px-4">
       <div className="bg-white shadow-lg rounded-xl p-8 max-w-md w-full text-center">
