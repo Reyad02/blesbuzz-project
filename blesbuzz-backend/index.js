@@ -5,7 +5,14 @@ const app = express();
 var cors = require('cors')
 require('dotenv').config({ override: true });
 const port = 3000;
-const axios = require("axios");
+const fs = require("fs");
+
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const uri = process.env.MONGODB_URI;
@@ -28,7 +35,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
 
 app.use(cors())
 
@@ -149,6 +155,21 @@ async function run() {
       upload.single("receipt"),
       async (req, res) => {
         try {
+
+          let receiptUrl = null;
+          if (req.file) {
+            const uploadResult = await cloudinary.uploader.upload(
+              req.file.path,
+              {
+                folder: "iptv-receipts",
+                resource_type: "auto",
+              }
+            );
+
+            receiptUrl = uploadResult.secure_url;
+            fs.unlinkSync(req.file.path);
+          }
+
           const { name, email, phone, connections, duration, price } = req.body;
 
           const result = await orders.insertOne({
@@ -159,7 +180,7 @@ async function run() {
             duration,
             price: Number(price),
             paymentMethod: "bank-transfer",
-            receipt: req.file ? req.file.path : null,
+            receipt: receiptUrl,
             approvalStatus: "pending",
           });
 
