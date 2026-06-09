@@ -4,8 +4,93 @@ const app = express();
 var cors = require('cors')
 require('dotenv').config({ override: true });
 const port = 3000;
+const axios = require("axios");
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+app.post(
+  "/stripe-webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (error) {
+      console.error("Stripe webhook signature error:", error.message);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
+    }
+
+    if (event.type !== "checkout.session.completed") {
+      return res.json({ received: true });
+    }
+
+    const session = event.data.object;
+    const customerEmail =
+      session.metadata?.email || session.customer_details?.email;
+    const customerName =
+      session.metadata?.client_name || session.customer_details?.name || "Customer";
+
+    // try {
+    // const bowpanelResponse = await axios.post(
+    //   `https://bowpanel.net/api/v1/devices/${process.env.BOWPANEL_DEVICE_TYPE}`,
+    //   {
+    //     subscription: Number(process.env.BOWPANEL_SUBSCRIPTION_ID),
+    //     country: null,
+    //     use_template: false,
+    //     vod_only: false,
+    //     note: `Paid order for ${customerName}`,
+    //   },
+    //   {
+    //     headers: {
+    //       "X-API-KEY": process.env.BOWPANEL_API_KEY,
+    //       "X-API-SECRET": process.env.BOWPANEL_API_SECRET,
+    //       "Content-Type": "application/json",
+    //     },
+    //   }
+    // );
+
+    // const device = bowpanelResponse.data?.item || bowpanelResponse.data;
+    // const username = device?.username || bowpanelResponse.data?.username;
+    // const password = device?.password || bowpanelResponse.data?.password;
+
+    // if (!customerEmail) {
+    //   throw new Error("Customer email not found in Stripe session");
+    // }
+
+    //       await mailTransporter.sendMail({
+    //         from: process.env.MAIL_FROM,
+    //         to: customerEmail,
+    //         subject: "Your IPTV account details",
+    //         text: `Hi ${customerName},
+
+    // Your payment was successful.
+
+    // Your IPTV login details:
+    // Username: ${username}
+    // Password: ${password}
+
+    // If you need help, reply to this email.`,
+    //       });
+
+    //       return res.json({ received: true });
+    //     } catch (error) {
+    //       console.error(
+    //         "Provisioning/email error:",
+    //         error.response?.data || error.message
+    //       );
+    //       return res.status(500).json({ error: "Provisioning failed" });
+    //     }
+
+    console.log(`Payment successful for ${customerName} (${customerEmail})`);
+    return res.json({ received: true });
+  }
+);
 
 app.use(express.json());
 app.use(cors())
@@ -68,15 +153,14 @@ app.post('/create-checkout-session', async (req, res) => {
 
 });
 
-
 app.post(
   "/bank-transfer-order",
   upload.single("receipt"),
   async (req, res) => {
     try {
-      const {name, email, phone, connections, duration, price} = req.body;
+      const { name, email, phone, connections, duration, price } = req.body;
 
-      console.log("Order Data:", { name, email, phone, connections, duration, price});
+      console.log("Order Data:", { name, email, phone, connections, duration, price });
 
       console.log("Uploaded File:", req.file);
 
