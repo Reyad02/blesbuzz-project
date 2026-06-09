@@ -21,7 +21,7 @@ export default function Success() {
         </p>
 
         <Link
-          to="/place-order"
+          to="/"
           className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium"
         >
           Back to Home

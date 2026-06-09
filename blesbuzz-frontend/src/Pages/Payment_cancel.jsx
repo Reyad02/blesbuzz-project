@@ -17,7 +17,7 @@ export default function Cancel() {
         </p>
 
         <Link
-          to="/place-order"
+          to="/"
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
         >
           Try Again

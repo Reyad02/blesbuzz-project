@@ -5,7 +5,7 @@ import Cancel from "../Pages/Payment_cancel"
 
 const router = createBrowserRouter([
   {
-    path: "/place-order",
+    path: "/",
     Component: IPTVOrderForm,
   },
   {
