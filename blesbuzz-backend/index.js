@@ -43,6 +43,7 @@ async function run() {
   try {
     const database = client.db("blesbuzz");
     const orders = database.collection("orders");
+    const pricingCollection = database.collection("prices");
 
     app.post(
       "/stripe-webhook",
@@ -375,6 +376,65 @@ async function run() {
       );
 
       res.json({ token });
+    });
+
+    app.get("/pricing", async (req, res) => {
+      try {
+        const data = await pricingCollection
+          .find({})
+          .sort({ type: 1 })
+          .toArray();
+
+        res.json(data);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to fetch pricing" });
+      }
+    });
+
+    app.get("/pricing-in-form", async (req, res) => {
+      try {
+        const data = await pricingCollection.find({}).toArray();
+
+        const formatted = data.reduce((acc, item) => {
+          const { type, duration, price } = item;
+
+          if (!acc[type]) {
+            acc[type] = {};
+          }
+
+          acc[type][duration] = price;
+
+          return acc;
+        }, {});
+
+        res.json(formatted);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to fetch pricing" });
+      }
+    });
+
+    app.put("/pricing/:type", async (req, res) => {
+      try {
+        const type = Number(req.params.type);
+        const { plans } = req.body;
+
+        await pricingCollection.updateOne(
+          { type },
+          {
+            $set: {
+              plans,
+            },
+          },
+          { upsert: true }
+        );
+
+        res.json({ message: "Pricing updated successfully" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to update pricing" });
+      }
     });
 
   } finally { }
