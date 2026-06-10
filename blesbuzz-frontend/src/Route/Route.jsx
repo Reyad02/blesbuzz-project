@@ -5,6 +5,7 @@ import Cancel from "../Pages/Payment_cancel"
 import AdminDashboard from "../Pages/Admin_dashboard";
 import Login from "../Pages/Login";
 import PrivateRoute from "./PrivateRoute";
+import Admin_layout from "../Layout/Admin_layout";
 
 const router = createBrowserRouter([
   {
@@ -25,11 +26,18 @@ const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    element: (
-      <PrivateRoute>
-        <AdminDashboard />
-      </PrivateRoute>
-    ),
+    element: <Admin_layout />,
+    children: [
+      {
+        index: true,
+        element: (
+          <PrivateRoute>
+            <AdminDashboard />
+          </PrivateRoute>
+        ),
+      }
+    ]
+
   }
 ]);
 
