@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, NavLink } from "react-router-dom";
 
 const AdminLayout = () => {
 
@@ -73,30 +73,48 @@ const AdminLayout = () => {
                     <ul className="menu p-4 flex-1 space-y-2  w-full">
 
                         <li className="w-full ">
-                            <Link
+                            <NavLink
                                 to="/admin"
-                                className="w-full hover:bg-slate-800 rounded-lg"
+                                end
+                                className={({ isActive }) =>
+                                    `w-full rounded-lg transition-colors ${isActive
+                                        ? "bg-slate-800 text-white"
+                                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                    }`
+                                }
                             >
                                 📦 Orders
-                            </Link>
+                            </NavLink>
                         </li>
 
                         <li className="w-full">
-                            <Link
+                            <NavLink
                                 to="/admin/customers"
-                                className="w-full hover:bg-slate-800 rounded-lg"
+                                end
+                                className={({ isActive }) =>
+                                    `w-full rounded-lg transition-colors ${isActive
+                                        ? "bg-slate-800 text-white"
+                                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                    }`
+                                }
                             >
                                 👥 Customers
-                            </Link>
+                            </NavLink>
                         </li>
 
                         <li className="w-full">
-                            <Link
+                            <NavLink
                                 to="/admin/settings"
-                                className="w-full hover:bg-slate-800 rounded-lg"
+                                end
+                                className={({ isActive }) =>
+                                    `w-full rounded-lg transition-colors ${isActive
+                                        ? "bg-slate-800 text-white"
+                                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                    }`
+                                }
                             >
                                 ⚙️ Settings
-                            </Link>
+                            </NavLink>
                         </li>
 
                     </ul>
