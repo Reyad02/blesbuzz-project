@@ -108,6 +108,7 @@ async function run() {
           paymentMethod: "stripe",
           receipt: null,
           approvalStatus: "pending",
+          createdAt: new Date().toISOString()
         };
 
         const inseterdId = await orders.insertOne(newOrder);
@@ -182,6 +183,7 @@ async function run() {
             paymentMethod: "bank-transfer",
             receipt: receiptUrl,
             approvalStatus: "pending",
+            createdAt: new Date().toISOString()
           });
 
           res.status(200).json({
@@ -214,6 +216,61 @@ async function run() {
         );
 
         res.json({ success: true });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false });
+      }
+    });
+
+    app.get("/orders", async (req, res) => {
+      try {
+        const allOrders = await orders
+          .find({})
+          .sort({ _id: -1 })
+          .toArray();
+
+        // console.log(allOrders);
+        res.json(allOrders);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Failed to fetch orders" });
+      }
+    });
+
+    app.patch("/orders/:id/approve", async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        const result = await orders.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              approvalStatus: "paid",
+            },
+          }
+        );
+
+        res.json({ success: true, result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false });
+      }
+    });
+
+    app.patch("/orders/:id/decline", async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        const result = await orders.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              approvalStatus: "declined",
+            },
+          }
+        );
+
+        res.json({ success: true, result });
       } catch (error) {
         console.error(error);
         res.status(500).json({ success: false });
