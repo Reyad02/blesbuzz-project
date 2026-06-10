@@ -223,18 +223,93 @@ async function run() {
       }
     });
 
-    app.get("/orders", async (req, res) => {
+    app.get("/paid-orders", async (req, res) => {
       try {
-        const allOrders = await orders
-          .find({})
+        const paidOrders = await orders
+          .find({ approvalStatus: "paid" })
           .sort({ _id: -1 })
           .toArray();
 
-        // console.log(allOrders);
-        res.json(allOrders);
+        const count = await orders.countDocuments({ approvalStatus: "paid" });
+
+        res.json({
+          count,
+          orders: paidOrders,
+        });
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Failed to fetch orders" });
+      }
+    });
+
+    app.get("/pending-orders", async (req, res) => {
+      try {
+        const pendingOrders = await orders
+          .find({ approvalStatus: "pending" })
+          .sort({ _id: -1 })
+          .toArray();
+
+        const count = await orders.countDocuments({ approvalStatus: "pending" });
+
+        res.json({
+          count,
+          orders: pendingOrders,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Failed to fetch orders" });
+      }
+    });
+
+    app.get("/total-orders", async (req, res) => {
+      try {
+        const filter = {
+          approvalStatus: { $in: ["pending", "paid"] },
+        };
+
+        const totalOrders = await orders
+          .find(filter)
+          .sort({ _id: -1 })
+          .toArray();
+
+        const count = await orders.countDocuments(filter);
+
+        res.json({
+          count,
+          orders: totalOrders,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Failed to fetch orders" });
+      }
+    });
+
+    app.get("/orders", async (req, res) => {
+      try {
+        const page = Number(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        const totalOrders = await orders.countDocuments();
+
+        const allOrders = await orders
+          .find({})
+          .sort({ createdAt: -1 }) // newest first
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        res.json({
+          orders: allOrders,
+          currentPage: page,
+          totalPages: Math.ceil(totalOrders / limit),
+          totalOrders,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({
+          message: "Failed to fetch orders",
+        });
       }
     });
 
