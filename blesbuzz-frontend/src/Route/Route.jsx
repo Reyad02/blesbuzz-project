@@ -3,6 +3,8 @@ import IPTVOrderForm from "../Pages/Place_order_form";
 import Success from "../Pages/Payment_success"
 import Cancel from "../Pages/Payment_cancel"
 import AdminDashboard from "../Pages/Admin_dashboard";
+import Login from "../Pages/Login";
+import PrivateRoute from "./PrivateRoute";
 
 const router = createBrowserRouter([
   {
@@ -18,8 +20,16 @@ const router = createBrowserRouter([
     Component: Cancel,
   },
   {
+    path: "/login",
+    Component: Login,
+  },
+  {
     path: "/admin",
-    Component: AdminDashboard,
+    element: (
+      <PrivateRoute>
+        <AdminDashboard />
+      </PrivateRoute>
+    ),
   }
 ]);
 

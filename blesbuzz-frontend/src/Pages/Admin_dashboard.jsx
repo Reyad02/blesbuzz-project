@@ -5,6 +5,11 @@ export default function AdminDashboard() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+    };
+
     const fetchOrders = async () => {
         try {
             const res = await axios.get("http://localhost:3000/orders");
@@ -57,6 +62,12 @@ export default function AdminDashboard() {
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
             <h1 className="text-2xl font-bold mb-6">Admin Orders Dashboard</h1>
+            <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+            >
+                Logout
+            </button>
 
             {loading ? (
                 <p>Loading...</p>
@@ -79,33 +90,6 @@ export default function AdminDashboard() {
 
                         <tbody>
                             {orders.map((order) => (
-                                // <tr key={order._id} className="border-b">
-                                //   <td className="p-3">{order.name}</td>
-                                //   <td className="p-3">{order.email}</td>
-                                //   <td className="p-3">{order.phone}</td>
-                                //   <td className="p-3">${order.price}</td>
-                                //   <td className="p-3">{order.duration}</td>
-                                //   <td className="p-3">{order.paymentMethod}</td>
-
-                                //   <td className={`p-3 font-semibold ${getStatusColor(order.approvalStatus)}`}>
-                                //     {order.approvalStatus}
-                                //   </td>
-
-                                //   <td className="p-3">
-                                //     {order.receipt ? (
-                                //       <a
-                                //         href={order.receipt}
-                                //         target="_blank"
-                                //         className="text-blue-600 underline"
-                                //       >
-                                //         View
-                                //       </a>
-                                //     ) : (
-                                //       "-"
-                                //     )}
-                                //   </td>
-                                // </tr>
-
                                 <tr key={order._id} className="border-b">
                                     <td className="p-3">{order.name}</td>
                                     <td className="p-3">{order.email}</td>

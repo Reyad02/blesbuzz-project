@@ -6,6 +6,7 @@ var cors = require('cors')
 require('dotenv').config({ override: true });
 const port = 3000;
 const fs = require("fs");
+const jwt = require("jsonwebtoken");
 
 const cloudinary = require("cloudinary").v2;
 cloudinary.config({
@@ -275,6 +276,30 @@ async function run() {
         console.error(error);
         res.status(500).json({ success: false });
       }
+    });
+
+    app.post("/admin/login", async (req, res) => {
+      const { email, password } = req.body;
+
+      const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+      if (
+        email !== ADMIN_EMAIL ||
+        password !== ADMIN_PASSWORD
+      ) {
+        return res.status(401).json({
+          message: "Invalid credentials",
+        });
+      }
+
+      const token = jwt.sign(
+        { email },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.json({ token });
     });
 
   } finally { }
