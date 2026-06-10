@@ -89,7 +89,7 @@ const AdminLayout = () => {
 
                         <li className="w-full">
                             <NavLink
-                                to="/admin/customers"
+                                to="/admin/pricing"
                                 end
                                 className={({ isActive }) =>
                                     `w-full rounded-lg transition-colors ${isActive
@@ -98,7 +98,7 @@ const AdminLayout = () => {
                                     }`
                                 }
                             >
-                                👥 Customers
+                                💵 Pricing
                             </NavLink>
                         </li>
 

@@ -6,6 +6,7 @@ import AdminDashboard from "../Pages/Admin_dashboard";
 import Login from "../Pages/Login";
 import PrivateRoute from "./PrivateRoute";
 import Admin_layout from "../Layout/Admin_layout";
+import AdminPricing from "../Pages/Admin_pricing";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,14 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute>
             <AdminDashboard />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "pricing",
+        element: (
+          <PrivateRoute>
+            <AdminPricing />
           </PrivateRoute>
         ),
       }
