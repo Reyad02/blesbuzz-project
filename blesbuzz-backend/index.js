@@ -66,6 +66,11 @@ async function run() {
         if (event.type === "checkout.session.completed") {
           const session = event.data.object;
           const orderId = session.metadata?.orderId;
+          const clientName = session.metadata?.client_name;
+          const email = session.metadata?.email;
+          const connections = session.metadata?.connections;
+          const duration = session.metadata?.duration;
+          const price = session.metadata?.price;
 
           if (orderId) {
             await orders.updateOne(
@@ -73,6 +78,10 @@ async function run() {
               { $set: { approvalStatus: "paid" } }
             );
           }
+
+          // you can send an email to the client here using nodemailer or any email service
+
+
         }
 
         else if (event.type === "checkout.session.expired") {
