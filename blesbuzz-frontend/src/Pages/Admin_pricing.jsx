@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 export default function AdminPricing() {
     const [pricing, setPricing] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+
+    // Separate saving state for each package
+    const [saving, setSaving] = useState({});
 
     // Fetch pricing
     const fetchPricing = async () => {
@@ -26,24 +29,41 @@ export default function AdminPricing() {
     // Update input values
     const handleChange = (index, planKey, value) => {
         const updated = [...pricing];
-        updated[index].plans[planKey] = Number(value);
+
+        updated[index] = {
+            ...updated[index],
+            plans: {
+                ...updated[index].plans,
+                [planKey]: Number(value),
+            },
+        };
+
         setPricing(updated);
     };
 
-    // Save pricing
+    // Save pricing for a specific package
     const savePricing = async (type, plans) => {
         try {
-            setSaving(true);
+            setSaving((prev) => ({
+                ...prev,
+                [type]: true,
+            }));
 
+            // You can use different APIs if you want
             await axios.put(`http://localhost:3000/pricing/${type}`, {
                 plans,
             });
 
-            alert("Pricing updated successfully!");
+            // alert(`Package ${type} updated successfully!`);
+            toast.success(`Package ${type} pricing has been updated!`);
         } catch (err) {
             console.log(err);
+            toast.error("Failed to update pricing");
         } finally {
-            setSaving(false);
+            setSaving((prev) => ({
+                ...prev,
+                [type]: false,
+            }));
         }
     };
 
@@ -56,13 +76,13 @@ export default function AdminPricing() {
     }
 
     return (
-        <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
-
+        <div className="space-y-7 min-h-screen">
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-slate-900">
                     Pricing Management
                 </h1>
+
                 <p className="text-slate-500 mt-1">
                     Update and manage all package pricing in real-time.
                 </p>
@@ -70,37 +90,36 @@ export default function AdminPricing() {
 
             {/* Pricing Cards */}
             <div className="space-y-8">
-
                 {pricing.map((item, index) => (
                     <div
                         key={item.type}
-                        className="bg-white border rounded-2xl shadow-sm hover:shadow-md transition"
+                        className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition"
                     >
-
-                        {/* Sticky Header inside card */}
+                        {/* Card Header */}
                         <div className="sticky top-0 bg-white z-10 border-b px-6 py-4 flex justify-between items-center rounded-t-2xl">
                             <h2 className="text-lg font-bold text-slate-800">
                                 Package {item.type}
                             </h2>
 
                             <button
-                                onClick={() => savePricing(item.type, item.plans)}
-                                disabled={saving}
-                                className="btn btn-primary btn-sm"
+                                onClick={() =>
+                                    savePricing(item.type, item.plans)
+                                }
+                                disabled={saving[item.type]}
+                                className="btn bg-slate-700 hover:bg-slate-800 text-white btn-sm border-0"
                             >
-                                {saving ? "Saving..." : "Save Changes"}
+                                {saving[item.type]
+                                    ? "Saving..."
+                                    : "Save Changes"}
                             </button>
                         </div>
 
-                        {/* Content */}
+                        {/* Card Content */}
                         <div className="p-6">
-
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-
                                 {Object.keys(item.plans).map((key) => (
-                                    <div key={key} className="group">
-
-                                        <label className="text-sm text-slate-500 group-hover:text-slate-700 transition">
+                                    <div key={key}>
+                                        <label className="text-sm text-slate-500 block mb-2">
                                             {key}
                                         </label>
 
@@ -114,23 +133,19 @@ export default function AdminPricing() {
                                                     e.target.value
                                                 )
                                             }
-                                            className="input input-bordered w-full mt-2 focus:ring-2 focus:ring-blue-500 transition"
+                                            className="input input-bordered w-full"
                                         />
                                     </div>
                                 ))}
-
                             </div>
 
-                            {/* Hint */}
                             <p className="text-xs text-slate-400 mt-5">
-                                Tip: Changes will reflect immediately on customer pricing page after saving.
+                                Tip: Changes will reflect immediately on the
+                                customer pricing page after saving.
                             </p>
-
                         </div>
-
                     </div>
                 ))}
-
             </div>
         </div>
     );
