@@ -102,7 +102,7 @@ const AdminLayout = () => {
                             </NavLink>
                         </li>
 
-                        <li className="w-full">
+                        {/* <li className="w-full">
                             <NavLink
                                 to="/admin/settings"
                                 end
@@ -115,7 +115,7 @@ const AdminLayout = () => {
                             >
                                 ⚙️ Settings
                             </NavLink>
-                        </li>
+                        </li> */}
 
                     </ul>
 

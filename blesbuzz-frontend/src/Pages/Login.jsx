@@ -12,16 +12,12 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const res = await axios.post(
-        "http://localhost:3000/admin/login",
-        {
-          email,
-          password,
-        }
-      );
+      const res = await axios.post("http://localhost:3000/admin/login", {
+        email,
+        password,
+      });
 
       localStorage.setItem("token", res.data.token);
-
       navigate("/admin");
     } catch (error) {
       alert("Invalid credentials");
@@ -29,44 +25,60 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-6">
-          Admin Login
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white">
+            IPTV Admin
+          </h1>
+          <p className="text-slate-400 mt-1">
+            Sign in to your dashboard
+          </p>
+        </div>
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block mb-2">Email</label>
+        <form onSubmit={handleLogin} className="space-y-5">
 
+          {/* Email */}
+          <div>
+            <label className="block text-sm text-slate-300 mb-2">
+              Email
+            </label>
             <input
               type="email"
-              className="w-full border rounded-lg p-3"
+              className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-600"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
-          <div className="mb-6">
-            <label className="block mb-2">Password</label>
-
+          {/* Password */}
+          <div>
+            <label className="block text-sm text-slate-300 mb-2">
+              Password
+            </label>
             <input
               type="password"
-              className="w-full border rounded-lg p-3"
+              className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-600"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
 
+          {/* Button */}
           <button
-            className="w-full bg-blue-600 text-white py-3 rounded-lg"
             type="submit"
+            className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white py-3 rounded-lg transition-all duration-200 font-medium"
           >
             Login
           </button>
+
         </form>
+
       </div>
     </div>
   );
