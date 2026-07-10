@@ -7,6 +7,10 @@ require('dotenv').config({ override: true });
 const port = 3000;
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const mailTemplate = require("./utils");
+const axios = require('axios').default;
+
 
 const cloudinary = require("cloudinary").v2;
 cloudinary.config({
@@ -35,6 +39,29 @@ const storage = multer.diskStorage({
   },
 });
 
+// Create a transporter using SMTP
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // use STARTTLS (upgrade connection to TLS after connecting)
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+function sendEmail(to, subject, html, attachments = []) {
+  const mailOptions = {
+    from: process.env.SMTP_USER,
+    to,
+    subject,
+    html,
+    attachments,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
 const upload = multer({ storage });
 
 app.use(cors())
@@ -44,6 +71,166 @@ async function run() {
     const database = client.db("blesbuzz");
     const orders = database.collection("orders");
     const pricingCollection = database.collection("prices");
+
+
+    async function ipTvAutomateProcess(orderDetails) {
+      const {
+        orderId,
+        clientName,
+        email,
+        connections,
+        duration,
+        deviceType,
+        macAddress
+      } = orderDetails;
+
+      try {
+        // const headers = {
+        //   Accept: "application/json",
+        //   "Content-Type": "application/json",
+        //   "X-API-KEY": process.env.BOWPANEL_X_API_KEY,
+        //   "X-API-SECRET": process.env.BOWPANEL_X_API_SECRET,
+        // };
+
+
+        // // STEP 1 : Get Subscription List
+        // const subscriptionResponse = await axios.get(
+        //   "https://bowpanel.net/api/v1/subscriptions",
+        //   { headers }
+        // );
+        // const subscriptions = subscriptionResponse.data.data || [];
+
+
+
+        // // STEP 2 : Find Correct Subscription
+        // const selectedSubscription = subscriptions.find(sub => {
+        //   return sub.label === duration;
+        // });
+
+        // if (!selectedSubscription) {
+        //   throw new Error("Subscription not found.");
+        // }
+        // const subscriptionId = selectedSubscription.id;
+
+
+
+        // // STEP 3 : Create IPTV Account
+        // const createResponse = await axios.post(
+        //   `https://bowpanel.net/api/v1/devices/${deviceType}`,
+        //   {
+        //     mac: macAddress || null,
+        //     subscription: subscriptionId,
+        //     country: null,
+        //     use_template: false,
+        //     vod_only: false,
+        //     bouquets: "*",
+        //     vods: "*",
+        //     template: null,
+        //     note: `Order ID: ${orderId}, Client Name: ${clientName}, Email: ${email}`,
+        //   },
+        //   { headers }
+        // );
+
+        // const device = createResponse.data.data;
+        // const username = device.username;
+        // const password = device.password;
+        // const deviceId = device.id;
+        // const exp_date = device.exp_date;
+
+
+
+        // // STEP 4 : Generate Link
+        // const linkResponse = await axios.put(
+        //   `https://bowpanel.net/api/v1/devices/${deviceType}/${username}/${password}/generate-link`,
+        //   {},
+        //   { headers }
+        // );
+        // const streamUrl = linkResponse.data.data.link;
+
+
+
+        // // STEP 5 : Update MongoDB
+        // // await orders.updateOne(
+        // //   { _id: new ObjectId(orderId) },
+        // //   {
+        // //     $set: {
+        // //       username,
+        // //       password,
+        // //       streamUrl,
+        // //       subscriptionId,
+        // //       exp_date,
+        // //     },
+        // //   }
+        // // );
+
+
+
+        // //-----------------------------------
+        // // STEP 6 : Send Email
+        // //-----------------------------------
+
+        // // await sendEmail(
+        // //   email,
+        // //   "Your IPTV Subscription Details",
+        // //   mailTemplate
+        // //     .replace("{{customer_name}}", clientName)
+        // //     .replace("{{username}}", username)
+        // //     .replace("{{password}}", password)
+        // //     .replace("{{m3u_url}}", streamUrl)
+        // //     .replace("{{connections}}", connections),
+        // //   [
+        // //     {
+        // //       filename: "logo.png",
+        // //       path: "./logo.png",
+        // //       cid: "logo",
+        // //     },
+        // //   ]
+        // // );
+
+        setTimeout(() => {
+          sendEmail(
+            email,
+            "Your IPTV Subscription Details",
+            mailTemplate
+              .replace("{{customer_name}}", "clientName")
+              .replace("{{username}}", "username")
+              .replace("{{password}}", "password")
+              .replace("{{server_url}}", "http://your-iptv-server.com")
+              .replace("{{m3u_url}}", "streamUrl")
+              .replace("{{expiry_date}}", "exp_date")
+              .replace("{{connections}}", "connections"),
+            [
+              {
+                filename: "logo.png",
+                path: "./logo.png",
+                cid: "logo",
+              }
+            ]
+          );
+        }, 20000); // 20,000 ms = 20 seconds
+
+        console.log("Provisioning completed.");
+
+      } catch (err) {
+
+        console.error("Provisioning Failed");
+
+        console.error(
+          err.response?.data || err.message
+        );
+
+        // await orders.updateOne(
+        //   { _id: new ObjectId(orderId) },
+        //   {
+        //     $set: {
+        //       provisioningStatus: "failed",
+        //       provisioningError:
+        //         err.response?.data || err.message,
+        //     },
+        //   }
+        // );
+      }
+    }
 
     app.post(
       "/stripe-webhook",
@@ -68,20 +255,36 @@ async function run() {
           const orderId = session.metadata?.orderId;
           const clientName = session.metadata?.client_name;
           const email = session.metadata?.email;
-          const connections = session.metadata?.connections;
+          const connections = Number(session.metadata?.connections);
           const duration = session.metadata?.duration;
           const price = session.metadata?.price;
+          const deviceType = session.metadata?.deviceType;
+          const macAddress = session.metadata?.macAddress || null;
+
+          orderDetails = {
+            orderId,
+            clientName,
+            email,
+            connections,
+            duration,
+            price,
+            deviceType,
+            macAddress
+          }
+
+          // console.log("Order Details from Stripe Webhook:", orderDetails);
 
           if (orderId) {
             await orders.updateOne(
               { _id: new ObjectId(orderId) },
               { $set: { approvalStatus: "paid" } }
             );
+
+            ipTvAutomateProcess(orderDetails)
+              .catch((err) => {
+                console.error("Error in ipTvAutomateProcess:", err);
+              });
           }
-
-          // you can send an email to the client here using nodemailer or any email service
-
-
         }
 
         else if (event.type === "checkout.session.expired") {
@@ -119,13 +322,21 @@ async function run() {
           paymentMethod: "stripe",
           receipt: null,
           approvalStatus: "pending",
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          username: "",
+          password: "",
+          streamUrl: "",
+          subscriptionId: "",
+          exp_date: "",
+          macAddress: products.macAddress || null,
+          deviceType: products.deviceType || null
         };
 
         const inseterdId = await orders.insertOne(newOrder);
 
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
+          customer_email: products.email,
           success_url: `http://localhost:5173/success`,
           cancel_url: `http://localhost:5173/cancel?orderId=${inseterdId.insertedId}`,
           line_items: [
@@ -149,10 +360,11 @@ async function run() {
             connections: products.connections,
             duration: products.duration,
             price: products.price,
+            deviceType: products.deviceType,
+            macAddress: products.macAddress || null,
             orderId: inseterdId.insertedId.toString()
           },
         });
-
 
         res.json({ url: session.url });
       }
@@ -182,19 +394,35 @@ async function run() {
             fs.unlinkSync(req.file.path);
           }
 
-          const { name, email, phone, connections, duration, price } = req.body;
+          const {
+            name,
+            email,
+            phone,
+            deviceType,
+            macAddress,
+            connections,
+            duration,
+            price,
+          } = req.body;
 
           const result = await orders.insertOne({
             name,
             email,
             phone,
+            deviceType,
+            macAddress,
             connections: Number(connections),
             duration,
             price: Number(price),
             paymentMethod: "bank-transfer",
             receipt: receiptUrl,
             approvalStatus: "pending",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            username: "",
+            password: "",
+            streamUrl: "",
+            subscriptionId: "",
+            exp_date: "",
           });
 
           res.status(200).json({

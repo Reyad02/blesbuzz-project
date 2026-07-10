@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 const DEFAULT_PRICING = {
-  1: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "12 Months": 0 },
-  2: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "12 Months": 0 },
-  3: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "12 Months": 0 },
+  1: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "1 Year": 0 },
+  2: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "1 Year": 0 },
+  3: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "1 Year": 0 },
 };
 
 export default function IPTVOrderForm() {
@@ -19,6 +19,8 @@ export default function IPTVOrderForm() {
     duration: "1 Month",
     paymentMethod: "stripe",
     receipt: null,
+    deviceType: "IPTV Smarters",
+    macAddress: null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -29,13 +31,28 @@ export default function IPTVOrderForm() {
       : 0;
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]:
-        e.target.name === "connections"
-          ? Number(e.target.value)
-          : e.target.value,
-    }));
+    const { name, value } = e.target;
+
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]:
+          name === "connections"
+            ? Number(value)
+            : name === "macAddress"
+              ? value || null
+              : value,
+      };
+
+      if (
+        name === "deviceType" &&
+        !["mag", "enigma2"].includes(value)
+      ) {
+        updated.macAddress = null;
+      }
+
+      return updated;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -45,6 +62,8 @@ export default function IPTVOrderForm() {
     try {
       const payload = { ...formData, price };
       const body = { products: payload };
+
+      console.log("Submitting order with payload:", payload);
 
       if (formData.paymentMethod === "stripe") {
         const response = await fetch(
@@ -69,6 +88,8 @@ export default function IPTVOrderForm() {
       data.append("duration", formData.duration);
       data.append("price", price);
       data.append("receipt", formData.receipt);
+      data.append("deviceType", formData.deviceType);
+      data.append("macAddress", formData.macAddress);
 
       await fetch("http://localhost:3000/bank-transfer-order", {
         method: "POST",
@@ -166,6 +187,46 @@ export default function IPTVOrderForm() {
               className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+
+
+          {/* Device Type */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Device Type
+            </label>
+
+            <select
+              name="deviceType"
+              value={formData.deviceType}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="m3u">M3U</option>
+              <option value="smart_tv">Smart TV</option>
+              <option value="mag">MAG Box</option>
+              <option value="enigma2">Enigma2</option>
+            </select>
+          </div>
+
+          {/* MAC Address */}
+          {(formData.deviceType === "mag" ||
+            formData.deviceType === "enigma2") && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  MAC Address
+                </label>
+
+                <input
+                  type="text"
+                  name="macAddress"
+                  required
+                  value={formData.macAddress ?? ""}
+                  onChange={handleChange}
+                  placeholder="00:1A:79:XX:XX:XX"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
 
           {/* Connections */}
           <div>
@@ -279,7 +340,7 @@ export default function IPTVOrderForm() {
                     : "border-slate-300"
                   }`}
               >
-                Credit / Debit Card
+                Card
               </button>
               <button
                 type="button"
