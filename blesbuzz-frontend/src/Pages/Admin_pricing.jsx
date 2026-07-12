@@ -96,7 +96,7 @@ export default function AdminPricing() {
                         className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition"
                     >
                         {/* Card Header */}
-                        <div className="sticky top-0 bg-white z-10 border-b px-6 py-4 flex justify-between items-center rounded-t-2xl">
+                        <div className="sticky top-0 bg-white z-10 border-b border-slate-200 px-6 py-4 flex justify-between items-center rounded-t-2xl">
                             <h2 className="text-lg font-bold text-slate-800">
                                 Package {item.type}
                             </h2>

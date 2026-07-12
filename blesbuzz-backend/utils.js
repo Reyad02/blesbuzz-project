@@ -70,22 +70,8 @@ Below are your login credentials.
 </tr>
 
 <tr>
-<td style="font-weight:bold;">M3U Playlist</td>
-<td>
-<a href="{{m3u_url}}" style="color:#2563eb;text-decoration:none;">
-{{m3u_url}}
-</a>
-</td>
-</tr>
-
-<tr style="background:#f8fafc;">
 <td style="font-weight:bold;">Expiration Date</td>
 <td>{{expiry_date}}</td>
-</tr>
-
-<tr>
-<td style="font-weight:bold;">Maximum Connections</td>
-<td>{{connections}}</td>
 </tr>
 
 </table>

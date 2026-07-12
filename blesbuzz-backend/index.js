@@ -71,8 +71,9 @@ async function run() {
     const database = client.db("blesbuzz");
     const orders = database.collection("orders");
     const pricingCollection = database.collection("prices");
+    const paymentsCollection = database.collection("payments");
 
-
+    // IPTV credential generation and sending email to the customer
     async function ipTvAutomateProcess(orderDetails) {
       const {
         orderId,
@@ -85,6 +86,12 @@ async function run() {
       } = orderDetails;
 
       try {
+
+        let macArray = macAddress;
+
+        if (typeof macArray === "string") {
+          macArray = JSON.parse(macArray);
+        }
         // const headers = {
         //   Accept: "application/json",
         //   "Content-Type": "application/json",
@@ -114,101 +121,87 @@ async function run() {
 
 
 
-        // // STEP 3 : Create IPTV Account
-        // const createResponse = await axios.post(
-        //   `https://bowpanel.net/api/v1/devices/${deviceType}`,
-        //   {
-        //     mac: macAddress || null,
-        //     subscription: subscriptionId,
-        //     country: null,
-        //     use_template: false,
-        //     vod_only: false,
-        //     bouquets: "*",
-        //     vods: "*",
-        //     template: null,
-        //     note: `Order ID: ${orderId}, Client Name: ${clientName}, Email: ${email}`,
-        //   },
-        //   { headers }
-        // );
+        for (let i = 0; i < connections; i++) {
+          const currentMac =
+            ["mag", "enigma2"].includes(deviceType)
+              ? macArray[i] || null
+              : null;
 
-        // const device = createResponse.data.data;
-        // const username = device.username;
-        // const password = device.password;
-        // const deviceId = device.id;
-        // const exp_date = device.exp_date;
+          // STEP 3 : Create IPTV Account
+          // const createResponse = await axios.post(
+          //   `https://bowpanel.net/api/v1/devices/${deviceType}`,
+          //   {
+          //     mac: currentMac || null,
+          //     subscription: subscriptionId,
+          //     country: null,
+          //     use_template: false,
+          //     vod_only: false,
+          //     bouquets: "*",
+          //     vods: "*",
+          //     template: null,
+          //     note: `Order ID: ${orderId}, Client Name: ${clientName}, Email: ${email}`,
+          //   },
+          //   { headers }
+          // );
 
-
-
-        // // STEP 4 : Generate Link
-        // const linkResponse = await axios.put(
-        //   `https://bowpanel.net/api/v1/devices/${deviceType}/${username}/${password}/generate-link`,
-        //   {},
-        //   { headers }
-        // );
-        // const streamUrl = linkResponse.data.data.link;
+          // const device = createResponse.data.data;
+          // const username = device.username;
+          // const password = device.password;
+          // const deviceId = device.id;
+          // const exp_date = device.exp_date;
 
 
 
-        // // STEP 5 : Update MongoDB
-        // // await orders.updateOne(
-        // //   { _id: new ObjectId(orderId) },
-        // //   {
-        // //     $set: {
-        // //       username,
-        // //       password,
-        // //       streamUrl,
-        // //       subscriptionId,
-        // //       exp_date,
-        // //     },
-        // //   }
-        // // );
+          // // STEP 4 : Generate Link
+          // const linkResponse = await axios.put(
+          //   `https://bowpanel.net/api/v1/devices/${deviceType}/${username}/${password}/generate-link`,
+          //   {},
+          //   { headers }
+          // );
+          // const streamUrl = linkResponse.data.data.link;
+
+          // // Demo value for testing without actual API calls
+
+          username = `user${Math.floor(Math.random() * 100000)}`;
+          password = `pass${Math.floor(Math.random() * 100000)}`;
+          streamUrl = `http://your-iptv-server.com/stream/${username}/${password}`;
+          // 2026-07-10
+          date_exp = new Date();
+          date_exp.setFullYear(date_exp.getFullYear() + 2);
+          exp_date = date_exp.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
 
+          // STEP 5 : Update MongoDB
+          await orders.insertOne({
+            orderId: new ObjectId(orderId),
+            username,
+            password,
+            streamUrl,
+            exp_date,
+            macAddress: currentMac || null,
+            deviceType: deviceType,
+            createdAt: new Date().toISOString(),
+          })
 
-        // //-----------------------------------
-        // // STEP 6 : Send Email
-        // //-----------------------------------
-
-        // // await sendEmail(
-        // //   email,
-        // //   "Your IPTV Subscription Details",
-        // //   mailTemplate
-        // //     .replace("{{customer_name}}", clientName)
-        // //     .replace("{{username}}", username)
-        // //     .replace("{{password}}", password)
-        // //     .replace("{{m3u_url}}", streamUrl)
-        // //     .replace("{{connections}}", connections),
-        // //   [
-        // //     {
-        // //       filename: "logo.png",
-        // //       path: "./logo.png",
-        // //       cid: "logo",
-        // //     },
-        // //   ]
-        // // );
-
-        setTimeout(() => {
           sendEmail(
             email,
             "Your IPTV Subscription Details",
             mailTemplate
-              .replace("{{customer_name}}", "clientName")
-              .replace("{{username}}", "username")
-              .replace("{{password}}", "password")
-              .replace("{{server_url}}", "http://your-iptv-server.com")
-              .replace("{{m3u_url}}", "streamUrl")
-              .replace("{{expiry_date}}", "exp_date")
-              .replace("{{connections}}", "connections"),
+              .replace("{{customer_name}}", clientName)
+              .replace("{{username}}", username)
+              .replace("{{password}}", password)
+              .replace("{{server_url}}", streamUrl)
+              .replace("{{expiry_date}}", exp_date)
             [
-              {
-                filename: "logo.png",
-                path: "./logo.png",
-                cid: "logo",
-              }
+            {
+              filename: "logo.png",
+              path: "./logo.png",
+              cid: "logo",
+            }
             ]
           );
-        }, 20000); // 20,000 ms = 20 seconds
 
+        }
         console.log("Provisioning completed.");
 
       } catch (err) {
@@ -219,19 +212,10 @@ async function run() {
           err.response?.data || err.message
         );
 
-        // await orders.updateOne(
-        //   { _id: new ObjectId(orderId) },
-        //   {
-        //     $set: {
-        //       provisioningStatus: "failed",
-        //       provisioningError:
-        //         err.response?.data || err.message,
-        //     },
-        //   }
-        // );
       }
     }
 
+    // Stripe Webhook Endpoint to check for payment success and update the order status in MongoDB
     app.post(
       "/stripe-webhook",
       express.raw({ type: "application/json" }),
@@ -257,9 +241,9 @@ async function run() {
           const email = session.metadata?.email;
           const connections = Number(session.metadata?.connections);
           const duration = session.metadata?.duration;
-          const price = session.metadata?.price;
+          const price = Number(session.metadata?.price);
           const deviceType = session.metadata?.deviceType;
-          const macAddress = session.metadata?.macAddress || null;
+          const macAddress = session.metadata?.macAddress || [];
 
           orderDetails = {
             orderId,
@@ -272,10 +256,8 @@ async function run() {
             macAddress
           }
 
-          // console.log("Order Details from Stripe Webhook:", orderDetails);
-
           if (orderId) {
-            await orders.updateOne(
+            await paymentsCollection.updateOne(
               { _id: new ObjectId(orderId) },
               { $set: { approvalStatus: "paid" } }
             );
@@ -292,7 +274,7 @@ async function run() {
           const orderId = session.metadata?.orderId;
 
           if (orderId) {
-            await orders.updateOne(
+            await paymentsCollection.updateOne(
               { _id: new ObjectId(orderId) },
               { $set: { approvalStatus: "expired" } }
             );
@@ -308,37 +290,30 @@ async function run() {
       console.log(`Example app listening on port ${port}`);
     });
 
+    // Endpoint to create a Stripe checkout session
     app.post('/create-checkout-session', async (req, res) => {
       try {
         const { products } = req.body;
-
-        const newOrder = {
+        const inseterdId1 = await paymentsCollection.insertOne({
           name: products.name,
           email: products.email,
           phone: products.phone,
-          connections: products.connections,
+          connections: Number(products.connections),
           duration: products.duration,
-          price: products.price,
+          price: Number(products.price),
           paymentMethod: "stripe",
           receipt: null,
           approvalStatus: "pending",
           createdAt: new Date().toISOString(),
-          username: "",
-          password: "",
-          streamUrl: "",
-          subscriptionId: "",
-          exp_date: "",
-          macAddress: products.macAddress || null,
-          deviceType: products.deviceType || null
-        };
-
-        const inseterdId = await orders.insertOne(newOrder);
+          deviceType: products.deviceType,
+          macAddress: products.macAddress || []
+        });
 
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           customer_email: products.email,
           success_url: `http://localhost:5173/success`,
-          cancel_url: `http://localhost:5173/cancel?orderId=${inseterdId.insertedId}`,
+          cancel_url: `http://localhost:5173/cancel?orderId=${inseterdId1.insertedId}`,
           line_items: [
             {
               price_data: {
@@ -357,12 +332,12 @@ async function run() {
             client_name: products.name,
             email: products.email,
             phone: products.phone,
-            connections: products.connections,
+            connections: Number(products.connections),
             duration: products.duration,
-            price: products.price,
+            price: Number(products.price),
             deviceType: products.deviceType,
-            macAddress: products.macAddress || null,
-            orderId: inseterdId.insertedId.toString()
+            macAddress: JSON.stringify(products.macAddress || []),
+            orderId: inseterdId1.insertedId.toString()
           },
         });
 
@@ -374,6 +349,7 @@ async function run() {
 
     });
 
+    // Endpoint to handle bank transfer orders
     app.post(
       "/bank-transfer-order",
       upload.single("receipt"),
@@ -405,12 +381,10 @@ async function run() {
             price,
           } = req.body;
 
-          const result = await orders.insertOne({
+          const result = await paymentsCollection.insertOne({
             name,
             email,
             phone,
-            deviceType,
-            macAddress,
             connections: Number(connections),
             duration,
             price: Number(price),
@@ -418,16 +392,13 @@ async function run() {
             receipt: receiptUrl,
             approvalStatus: "pending",
             createdAt: new Date().toISOString(),
-            username: "",
-            password: "",
-            streamUrl: "",
-            subscriptionId: "",
-            exp_date: "",
+            deviceType,
+            macAddress: JSON.parse(macAddress || "[]")
           });
 
           res.status(200).json({
             success: true,
-            message: "Order received successfully",
+            message: "Paymentreceived",
             data: result
           });
         } catch (error) {
@@ -441,11 +412,12 @@ async function run() {
       }
     );
 
+    // Endpoint to handle payment cancellation by user from the stripe checkout page
     app.post("/payment-cancelled", async (req, res) => {
       try {
         const { orderId } = req.body;
 
-        await orders.updateOne(
+        await paymentsCollection.updateOne(
           { _id: new ObjectId(orderId) },
           {
             $set: {
@@ -461,14 +433,15 @@ async function run() {
       }
     });
 
+    // Endpoint to fetch total paid orders to show in dashboard
     app.get("/paid-orders", async (req, res) => {
       try {
-        const paidOrders = await orders
+        const paidOrders = await paymentsCollection
           .find({ approvalStatus: "paid" })
           .sort({ _id: -1 })
           .toArray();
 
-        const count = await orders.countDocuments({ approvalStatus: "paid" });
+        const count = await paymentsCollection.countDocuments({ approvalStatus: "paid" });
 
         res.json({
           count,
@@ -480,14 +453,15 @@ async function run() {
       }
     });
 
+    // Endpoint to fetch total pending orders to show in dashboard
     app.get("/pending-orders", async (req, res) => {
       try {
-        const pendingOrders = await orders
+        const pendingOrders = await paymentsCollection
           .find({ approvalStatus: "pending" })
           .sort({ _id: -1 })
           .toArray();
 
-        const count = await orders.countDocuments({ approvalStatus: "pending" });
+        const count = await paymentsCollection.countDocuments({ approvalStatus: "pending" });
 
         res.json({
           count,
@@ -499,18 +473,19 @@ async function run() {
       }
     });
 
+    // Endpoint to fetch total orders (pending + paid) to show in dashboard
     app.get("/total-orders", async (req, res) => {
       try {
         const filter = {
           approvalStatus: { $in: ["pending", "paid"] },
         };
 
-        const totalOrders = await orders
+        const totalOrders = await paymentsCollection
           .find(filter)
           .sort({ _id: -1 })
           .toArray();
 
-        const count = await orders.countDocuments(filter);
+        const count = await paymentsCollection.countDocuments(filter);
 
         res.json({
           count,
@@ -522,15 +497,16 @@ async function run() {
       }
     });
 
+    // Endpoint to fetch all orders with pagination for admin dashboard
     app.get("/orders", async (req, res) => {
       try {
         const page = Number(req.query.page) || 1;
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        const totalOrders = await orders.countDocuments();
+        const totalOrders = await paymentsCollection.countDocuments();
 
-        const allOrders = await orders
+        const allOrders = await paymentsCollection
           .find({})
           .sort({ createdAt: -1 }) // newest first
           .skip(skip)
@@ -551,11 +527,44 @@ async function run() {
       }
     });
 
+    // Endpoint to fetch a specific order by ID and finding all the IPTV credentials associated with that order
+    app.get("/orders/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        const result = await paymentsCollection.aggregate([
+          {
+            $match: {
+              _id: new ObjectId(id),
+            },
+          },
+          {
+            $lookup: {
+              from: "orders",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "orders",
+            },
+          },
+        ]).toArray();
+
+        if (result.length === 0) {
+          return res.status(404).json({ message: "Order not found" });
+        }
+
+        res.json(result[0]);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Failed to fetch order" });
+      }
+    });
+
+    // Endpoint to approve an order by adming and IPTV credential generation and sending email to the customer
     app.patch("/orders/:id/approve", async (req, res) => {
       try {
         const { id } = req.params;
 
-        const result = await orders.updateOne(
+        const result = await paymentsCollection.updateOne(
           { _id: new ObjectId(id) },
           {
             $set: {
@@ -564,6 +573,20 @@ async function run() {
           }
         );
 
+        if (result.modifiedCount > 0) {
+          const order = await paymentsCollection.findOne({ _id: new ObjectId(id) });
+          orderDetails = {
+            orderId: order._id.toString(),
+            clientName: order.name,
+            email: order.email,
+            connections: Number(order.connections),
+            duration: order.duration,
+            deviceType: order.deviceType,
+            macAddress: JSON.stringify(order.macAddress || [])
+          }
+          await ipTvAutomateProcess(orderDetails);
+        }
+
         res.json({ success: true, result });
       } catch (error) {
         console.error(error);
@@ -571,11 +594,12 @@ async function run() {
       }
     });
 
+    // Endpoint to decline an order by admin
     app.patch("/orders/:id/decline", async (req, res) => {
       try {
         const { id } = req.params;
 
-        const result = await orders.updateOne(
+        const result = await paymentsCollection.updateOne(
           { _id: new ObjectId(id) },
           {
             $set: {
@@ -591,6 +615,7 @@ async function run() {
       }
     });
 
+    // Endpoint to login as admin
     app.post("/admin/login", async (req, res) => {
       const { email, password } = req.body;
 
@@ -615,6 +640,7 @@ async function run() {
       res.json({ token });
     });
 
+    // Endpoint to fetch pricing for admin 
     app.get("/pricing", async (req, res) => {
       try {
         const data = await pricingCollection
@@ -652,6 +678,7 @@ async function run() {
       }
     });
 
+    // Endpoint to update pricing for a specific package
     app.put("/pricing/:type", async (req, res) => {
       try {
         const type = Number(req.params.type);

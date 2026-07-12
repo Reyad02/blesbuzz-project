@@ -13,6 +13,10 @@ export default function AdminDashboard() {
     const [totalPendingOrders, setTotalPendingOrders] = useState(0);
     const [totalPendingPaidOrders, setTotalPendingPaidOrders] = useState(0);
 
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [modalLoading, setModalLoading] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+
     const fetchOrders = async (currentPage = 1) => {
         try {
             setLoading(true);
@@ -67,6 +71,21 @@ export default function AdminDashboard() {
             setTotalPendingPaidOrders(totalRes.data.count);
         } catch (err) {
             console.log(err);
+        }
+    };
+
+    const handleViewOrder = async (id) => {
+        try {
+            setModalLoading(true);
+            setShowModal(true);
+
+            const res = await axios.get(`http://localhost:3000/orders/${id}`);
+
+            setSelectedOrder(res.data);
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setModalLoading(false);
         }
     };
 
@@ -181,7 +200,8 @@ export default function AdminDashboard() {
                                 {orders.map((order) => (
                                     <tr
                                         key={order._id}
-                                        className="hover:bg-slate-50"
+                                        onClick={() => handleViewOrder(order._id)}
+                                        className="hover:bg-slate-50 cursor-pointer"
                                     >
                                         <td className="font-medium">
                                             {order.name}
@@ -217,6 +237,7 @@ export default function AdminDashboard() {
 
                                             {order.receipt ? (
                                                 <a
+                                                    onClick={(e) => e.stopPropagation()}
                                                     href={order.receipt}
                                                     target="_blank"
                                                     rel="noreferrer"
@@ -245,18 +266,20 @@ export default function AdminDashboard() {
                                                     <div className="flex gap-2">
 
                                                         <button
-                                                            onClick={() =>
-                                                                handleApprove(order._id)
-                                                            }
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleApprove(order._id);
+                                                            }}
                                                             className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm"
                                                         >
                                                             Approve
                                                         </button>
 
                                                         <button
-                                                            onClick={() =>
-                                                                handleDecline(order._id)
-                                                            }
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDecline(order._id);
+                                                            }}
                                                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm"
                                                         >
                                                             Decline
@@ -356,6 +379,173 @@ export default function AdminDashboard() {
                     Next →
                 </button>
             </div>
+
+            {showModal && (
+                <div className="fixed inset-0 text-slate-900 bg-black/50 flex justify-center items-center z-50 p-5">
+                    <div className="bg-slate-100 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+
+                        <div className="flex justify-between items-center border-b border-slate-200 p-5">
+                            <h2 className="text-2xl font-bold ">
+                                Order Details
+                            </h2>
+
+                            <button
+                                onClick={() => {
+                                    setShowModal(false);
+                                    setSelectedOrder(null);
+                                }}
+                                className="text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {modalLoading ? (
+
+                            <div className="flex justify-center py-20">
+                                <span className="loading loading-spinner loading-lg"></span>
+                            </div>
+
+                        ) : selectedOrder && (
+
+                            <div className="p-6 space-y-8 text-black">
+
+                                {/* Customer Information */}
+
+                                <div>
+                                    <h3 className="font-bold text-lg mb-3">
+                                        Customer Information
+                                    </h3>
+
+                                    <div className="grid md:grid-cols-2 gap-4">
+
+                                        <div>
+                                            <strong>Name:</strong> {selectedOrder.name}
+                                        </div>
+
+                                        <div>
+                                            <strong>Email:</strong> {selectedOrder.email}
+                                        </div>
+
+                                        <div>
+                                            <strong>Phone:</strong> {selectedOrder.phone}
+                                        </div>
+
+                                        <div>
+                                            <strong>Price:</strong> ${selectedOrder.price}
+                                        </div>
+
+                                        <div>
+                                            <strong>Duration:</strong> {selectedOrder.duration}
+                                        </div>
+
+                                        <div>
+                                            <strong>Connections:</strong> {selectedOrder.connections}
+                                        </div>
+
+                                        <div>
+                                            <strong>Status:</strong> <span
+                                                className={`px-3 py-1 rounded-full text-sm font-medium
+                      ${selectedOrder.approvalStatus === "paid"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : selectedOrder.approvalStatus === "declined" || selectedOrder.approvalStatus === "cancelled"
+                                                            ? "bg-red-100 text-red-700"
+                                                            : "bg-yellow-100 text-yellow-700"
+                                                    }`}
+                                            >
+                                                {selectedOrder.approvalStatus}
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                {/* IPTV Accounts */}
+
+                                <div>
+
+                                    <div className="space-y-4">
+
+                                        {selectedOrder.orders?.length ? (
+
+                                            selectedOrder.orders.map((item, index) => (
+
+                                                <div
+                                                    key={item._id}
+                                                    className="border bg-slate-50 border-slate-200  rounded-xl p-5 "
+                                                >
+
+                                                    <h4 className="font-semibold mb-3">
+                                                        Connection {index + 1}
+                                                    </h4>
+
+                                                    <div className="grid md:grid-cols-2 gap-3">
+
+                                                        <div>
+                                                            <strong>Username: </strong>
+                                                            {item.username}
+                                                        </div>
+
+                                                        <div>
+                                                            <strong>Password: </strong>
+                                                            {item.password}
+                                                        </div>
+
+                                                       
+
+                                                        <div>
+                                                            <strong>Expiry:</strong> {item.exp_date}
+                                                        </div>
+
+                                                        <div>
+                                                            <strong>Device Type:</strong> {item.deviceType}
+                                                        </div>
+
+                                                         <div className="md:col-span-2">
+                                                            <strong>Stream URL:</strong> <a
+                                                                href={item.streamUrl}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="text-blue-700 break-all"
+                                                            >
+                                                                {item.streamUrl}
+                                                            </a>
+                                                        </div>
+
+                                                        {item.macAddress && (
+
+                                                            <div className="md:col-span-2">
+                                                                <strong>MAC Address:</strong> {item.macAddress}
+                                                            </div>
+
+                                                        )}
+
+                                                    </div>
+
+                                                </div>
+
+                                            ))
+
+                                        ) : (
+
+                                            <div className="text-gray-500">
+                                                No IPTV account has been provisioned yet.
+                                            </div>
+
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+                    </div>
+                </div>
+            )}
 
         </div>
     );

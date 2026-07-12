@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const DEFAULT_PRICING = {
   1: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "1 Year": 0 },
@@ -20,7 +21,7 @@ export default function IPTVOrderForm() {
     paymentMethod: "stripe",
     receipt: null,
     deviceType: "IPTV Smarters",
-    macAddress: null,
+    macAddress: [""],
   });
 
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,7 @@ export default function IPTVOrderForm() {
           name === "connections"
             ? Number(value)
             : name === "macAddress"
-              ? value || null
+              ? value || []
               : value,
       };
 
@@ -48,7 +49,7 @@ export default function IPTVOrderForm() {
         name === "deviceType" &&
         !["mag", "enigma2"].includes(value)
       ) {
-        updated.macAddress = null;
+        updated.macAddress = [];
       }
 
       return updated;
@@ -84,22 +85,25 @@ export default function IPTVOrderForm() {
       data.append("name", formData.name);
       data.append("email", formData.email);
       data.append("phone", formData.phone);
-      data.append("connections", formData.connections);
+      data.append("connections", Number(formData.connections));
       data.append("duration", formData.duration);
-      data.append("price", price);
+      data.append("price", Number(price));
       data.append("receipt", formData.receipt);
       data.append("deviceType", formData.deviceType);
-      data.append("macAddress", formData.macAddress);
-
+      data.append(
+        "macAddress",
+        JSON.stringify(formData.macAddress)
+      );
       await fetch("http://localhost:3000/bank-transfer-order", {
         method: "POST",
         body: data,
       });
 
-      alert("Order submitted successfully");
+      // alert("Order submitted successfully");
+      toast.success(`Order submitted successfully!`);
     } catch (err) {
       console.error(err);
-      alert("Something went wrong");
+      toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -211,20 +215,35 @@ export default function IPTVOrderForm() {
           {/* MAC Address */}
           {(formData.deviceType === "mag" ||
             formData.deviceType === "enigma2") && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  MAC Address
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-slate-700">
+                  MAC Addresses
                 </label>
 
-                <input
-                  type="text"
-                  name="macAddress"
-                  required
-                  value={formData.macAddress ?? ""}
-                  onChange={handleChange}
-                  placeholder="00:1A:79:XX:XX:XX"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                {formData.macAddress.map((mac, index) => (
+                  <div key={index}>
+                    <label className="block text-sm text-slate-600 mb-2">
+                      Connection {index + 1}
+                    </label>
+
+                    <input
+                      type="text"
+                      required
+                      value={mac}
+                      onChange={(e) => {
+                        const updated = [...formData.macAddress];
+                        updated[index] = e.target.value;
+
+                        setFormData((prev) => ({
+                          ...prev,
+                          macAddress: updated,
+                        }));
+                      }}
+                      placeholder="00:1A:79:XX:XX:XX"
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                ))}
               </div>
             )}
 
@@ -239,7 +258,14 @@ export default function IPTVOrderForm() {
                   key={conn}
                   type="button"
                   onClick={() =>
-                    setFormData({ ...formData, connections: conn })
+                    setFormData((prev) => ({
+                      ...prev,
+                      connections: conn,
+                      macAddress: Array.from(
+                        { length: conn },
+                        (_, i) => prev.macAddress?.[i] || ""
+                      ),
+                    }))
                   }
                   className={`py-3 rounded-xl border text-sm font-medium transition
                     ${formData.connections === conn
@@ -297,7 +323,7 @@ export default function IPTVOrderForm() {
                     >
                       <div className="text-left">
                         <p className="font-medium text-slate-900">{duration}</p>
-                        {duration === "12 Months" && (
+                        {duration === "1 Year" && (
                           <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                             Best Value
                           </span>
