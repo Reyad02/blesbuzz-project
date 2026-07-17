@@ -10,6 +10,9 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const mailTemplate = require("./utils");
 const axios = require('axios').default;
+// const IntuitOAuthClient = require('intuit-oauth');
+const { registerQuickBooksRoutes } = require("./quickbooks");
+
 
 
 const cloudinary = require("cloudinary").v2;
@@ -62,7 +65,36 @@ function sendEmail(to, subject, html, attachments = []) {
   return transporter.sendMail(mailOptions);
 }
 
+function itemIdForQuickbooks(duration, connections) {
+  if (connections === 1) {
+    if (duration === "1 Month") return 20
+    else if (duration === "3 Months") return 21
+    else if (duration === "6 Months") return 22
+    else if (duration === "1 Year") return 23
+  }
+
+  else if (connections === 2) {
+    if (duration === "1 Month") return 24
+    else if (duration === "3 Months") return 25
+    else if (duration === "6 Months") return 26
+    else if (duration === "1 Year") return 27
+  }
+  else if (connections === 3) {
+    if (duration === "1 Month") return 28
+    else if (duration === "3 Months") return 29
+    else if (duration === "6 Months") return 30
+    else if (duration === "1 Year") return 31
+  }
+}
+
 const upload = multer({ storage });
+
+// const oauthClient = new IntuitOAuthClient({
+//   clientId: process.env.QUICKBOOKS_CLIENT_ID, // QuickBooks OAuth2 Client ID
+//   clientSecret: process.env.QUICKBOOKS_CLIENT_SECRET, // QuickBooks OAuth2 Client Secret
+//   environment: 'sandbox', // 'sandbox' or 'production'
+//   redirectUri: process.env.QUICKBOOKS_REDIRECT_URI // Redirect URI for OAuth callbacks
+// });
 
 app.use(cors())
 
@@ -72,6 +104,8 @@ async function run() {
     const orders = database.collection("orders");
     const pricingCollection = database.collection("prices");
     const paymentsCollection = database.collection("payments");
+
+    const { syncOrderToQuickBooks } = registerQuickBooksRoutes(app, database);
 
     // IPTV credential generation and sending email to the customer
     async function ipTvAutomateProcess(orderDetails) {
@@ -266,6 +300,14 @@ async function run() {
               .catch((err) => {
                 console.error("Error in ipTvAutomateProcess:", err);
               });
+
+            // NEW — sync this sale to QuickBooks as a paid Sales Receipt
+            syncOrderToQuickBooks(
+              { _id: new ObjectId(orderId), name: clientName, email, price, connections, duration, deviceType, macAddress },
+              "online", 
+              itemIdForQuickbooks(duration, connections)
+            ).catch((err) => console.error("QuickBooks sync error:", err));
+
           }
         }
 
@@ -585,6 +627,11 @@ async function run() {
             macAddress: JSON.stringify(order.macAddress || [])
           }
           await ipTvAutomateProcess(orderDetails);
+
+          // NEW — sync this sale to QuickBooks as an Invoice marked paid
+          syncOrderToQuickBooks(order, "local", itemIdForQuickbooks(order.duration, order.connections)).catch((err) =>
+            console.error("QuickBooks sync error:", err)
+          );
         }
 
         res.json({ success: true, result });
@@ -700,6 +747,48 @@ async function run() {
         res.status(500).json({ message: "Failed to update pricing" });
       }
     });
+
+    // app.get('/auth', (req, res) => {
+    //   // Generate the authorization URL for QuickBooks
+    //   const authUri = oauthClient.authorizeUri({
+    //     scope: [IntuitOAuthClient.scopes.Accounting, IntuitOAuthClient.scopes.OpenId],
+    //     state: 'Init' // State to protect against CSRF attacks
+    //   });
+    //   // Redirect user to the QuickBooks authorization page
+    //   res.redirect(authUri);
+    // });
+
+    // // Callback route for handling the response from QuickBooks
+    // app.get('/callback', async (req, res) => {
+    //   const parseRedirect = req.url;
+
+    //   try {
+    //     // Create an OAuth token using the callback URL
+    //     const authResponse = await oauthClient.createToken(parseRedirect);
+    //     // Redirect to the payments route after successful authentication
+    //     res.redirect('/payments');
+    //   } catch (e) {
+    //     console.error('Error', e);
+    //   }
+    // });
+
+    // // Route to fetch payments data from QuickBooks
+    // app.get('/payments', async (req, res) => {
+    //   try {
+    //     // Make an API call to QuickBooks to fetch payments
+    //     const response = await oauthClient.makeApiCall({
+    //       url: `https://sandbox-quickbooks.api.intuit.com/v3/company/9341457513716941/query?query=select * from Payment&minorversion=40`,
+    //       method: 'GET',
+    //       headers: {
+    //         'Content-Type': 'application/json'
+    //       }
+    //     });
+    //     // Send the fetched data as JSON response
+    //     res.json(JSON.parse(response.body));
+    //   } catch (e) {
+    //     console.error(e);
+    //   }
+    // });
 
   } finally { }
 }

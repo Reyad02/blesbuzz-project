@@ -530,7 +530,7 @@ export default function AdminDashboard() {
                                         ) : (
 
                                             <div className="text-gray-500">
-                                                No IPTV account has been provisioned yet.
+                                                No streaming account has been provisioned yet.
                                             </div>
 
                                         )}

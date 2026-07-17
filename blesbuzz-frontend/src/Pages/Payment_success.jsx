@@ -17,7 +17,7 @@ export default function Success() {
         </p>
 
         <p className="text-gray-600 mb-8">
-          Your IPTV account details will be sent to your email shortly.
+          Your streaming account details will be sent to your email shortly.
         </p>
 
         <Link

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -8,21 +8,23 @@ const DEFAULT_PRICING = {
   3: { "1 Month": 0, "3 Months": 0, "6 Months": 0, "1 Year": 0 },
 };
 
+const INITIAL_FORM_DATA = {
+  name: "",
+  email: "",
+  phone: "",
+  connections: 1,
+  duration: "1 Month",
+  paymentMethod: "stripe",
+  receipt: null,
+  deviceType: "m3u",
+  macAddress: [""],
+};
+
 export default function IPTVOrderForm() {
   const [pricing, setPricing] = useState(DEFAULT_PRICING);
-  const [pricingLoaded, setPricingLoaded] = useState(false);
-
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    connections: 1,
-    duration: "1 Month",
-    paymentMethod: "stripe",
-    receipt: null,
-    deviceType: "IPTV Smarters",
-    macAddress: [""],
-  });
+  const [pricingLoaded, setPricingLoaded] = useState(false)
+  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+  const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(false);
 
@@ -101,6 +103,10 @@ export default function IPTVOrderForm() {
 
       // alert("Order submitted successfully");
       toast.success(`Order submitted successfully!`);
+      setFormData(INITIAL_FORM_DATA);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong");
@@ -135,7 +141,7 @@ export default function IPTVOrderForm() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-slate-900">
-            IPTV Subscription
+            Streaming Subscription
           </h1>
           <p className="text-slate-500 mt-1">
             Complete your subscription purchase securely.
@@ -391,6 +397,7 @@ export default function IPTVOrderForm() {
                 Upload Receipt
               </label>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*,.pdf"
                 required
