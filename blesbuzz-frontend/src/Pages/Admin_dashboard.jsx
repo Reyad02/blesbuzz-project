@@ -270,7 +270,7 @@ export default function AdminDashboard() {
                                                                 e.stopPropagation();
                                                                 handleApprove(order._id);
                                                             }}
-                                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm"
+                                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm cursor-pointer"
                                                         >
                                                             Approve
                                                         </button>
@@ -280,7 +280,7 @@ export default function AdminDashboard() {
                                                                 e.stopPropagation();
                                                                 handleDecline(order._id);
                                                             }}
-                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm"
+                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm cursor-pointer"
                                                         >
                                                             Decline
                                                         </button>

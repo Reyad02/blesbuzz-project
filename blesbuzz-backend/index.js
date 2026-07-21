@@ -219,19 +219,19 @@ async function run() {
 
           sendEmail(
             email,
-            "Your IPTV Subscription Details",
+            "Your Streaming Subscription Details",
             mailTemplate
               .replace("{{customer_name}}", clientName)
               .replace("{{username}}", username)
               .replace("{{password}}", password)
               .replace("{{server_url}}", streamUrl)
-              .replace("{{expiry_date}}", exp_date)
+              .replace("{{expiry_date}}", exp_date),
             [
-            {
-              filename: "logo.png",
-              path: "./logo.png",
-              cid: "logo",
-            }
+              {
+                filename: "logo.png",
+                path: "./logo.png",
+                cid: "logo",
+              }
             ]
           );
 
@@ -302,11 +302,11 @@ async function run() {
               });
 
             // NEW — sync this sale to QuickBooks as a paid Sales Receipt
-            syncOrderToQuickBooks(
-              { _id: new ObjectId(orderId), name: clientName, email, price, connections, duration, deviceType, macAddress },
-              "online", 
-              itemIdForQuickbooks(duration, connections)
-            ).catch((err) => console.error("QuickBooks sync error:", err));
+            // syncOrderToQuickBooks(
+            //   { _id: new ObjectId(orderId), name: clientName, email, price, connections, duration, deviceType, macAddress },
+            //   "online", 
+            //   itemIdForQuickbooks(duration, connections)
+            // ).catch((err) => console.error("QuickBooks sync error:", err));
 
           }
         }
@@ -629,9 +629,9 @@ async function run() {
           await ipTvAutomateProcess(orderDetails);
 
           // NEW — sync this sale to QuickBooks as an Invoice marked paid
-          syncOrderToQuickBooks(order, "local", itemIdForQuickbooks(order.duration, order.connections)).catch((err) =>
-            console.error("QuickBooks sync error:", err)
-          );
+          // syncOrderToQuickBooks(order, "local", itemIdForQuickbooks(order.duration, order.connections)).catch((err) =>
+          //   console.error("QuickBooks sync error:", err)
+          // );
         }
 
         res.json({ success: true, result });
