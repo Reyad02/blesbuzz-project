@@ -11,7 +11,7 @@ const nodemailer = require("nodemailer");
 const mailTemplate = require("./utils");
 const axios = require('axios').default;
 // const IntuitOAuthClient = require('intuit-oauth');
-const { registerQuickBooksRoutes } = require("./quickbooks");
+// const { registerQuickBooksRoutes } = require("./quickbooks");
 
 
 
@@ -65,27 +65,27 @@ function sendEmail(to, subject, html, attachments = []) {
   return transporter.sendMail(mailOptions);
 }
 
-function itemIdForQuickbooks(duration, connections) {
-  if (connections === 1) {
-    if (duration === "1 Month") return 20
-    else if (duration === "3 Months") return 21
-    else if (duration === "6 Months") return 22
-    else if (duration === "1 Year") return 23
-  }
+// function itemIdForQuickbooks(duration, connections) {
+//   if (connections === 1) {
+//     if (duration === "1 Month") return 20
+//     else if (duration === "3 Months") return 21
+//     else if (duration === "6 Months") return 22
+//     else if (duration === "1 Year") return 23
+//   }
 
-  else if (connections === 2) {
-    if (duration === "1 Month") return 24
-    else if (duration === "3 Months") return 25
-    else if (duration === "6 Months") return 26
-    else if (duration === "1 Year") return 27
-  }
-  else if (connections === 3) {
-    if (duration === "1 Month") return 28
-    else if (duration === "3 Months") return 29
-    else if (duration === "6 Months") return 30
-    else if (duration === "1 Year") return 31
-  }
-}
+//   else if (connections === 2) {
+//     if (duration === "1 Month") return 24
+//     else if (duration === "3 Months") return 25
+//     else if (duration === "6 Months") return 26
+//     else if (duration === "1 Year") return 27
+//   }
+//   else if (connections === 3) {
+//     if (duration === "1 Month") return 28
+//     else if (duration === "3 Months") return 29
+//     else if (duration === "6 Months") return 30
+//     else if (duration === "1 Year") return 31
+//   }
+// }
 
 const upload = multer({ storage });
 
@@ -105,7 +105,7 @@ async function run() {
     const pricingCollection = database.collection("prices");
     const paymentsCollection = database.collection("payments");
 
-    const { syncOrderToQuickBooks } = registerQuickBooksRoutes(app, database);
+    // const { syncOrderToQuickBooks } = registerQuickBooksRoutes(app, database);
 
     // IPTV credential generation and sending email to the customer
     async function ipTvAutomateProcess(orderDetails) {
@@ -361,7 +361,7 @@ async function run() {
               price_data: {
                 currency: 'usd',
                 product_data: {
-                  name: `IPTV Subscription - ${products.duration} for ${products.connections} devices`,
+                  name: `Streaming Subscription - ${products.duration} for ${products.connections} devices`,
                 },
                 unit_amount: parseInt(products.price) * 100,
               },
